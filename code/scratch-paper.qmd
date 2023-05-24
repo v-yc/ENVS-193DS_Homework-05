@@ -1,0 +1,164 @@
+---
+title: "Untitled"
+format: 
+  html:
+    toc: true # add table of contents
+    toc-location: left # put toc on the left
+    code-fold: true # all code is folded, can be clicked on to expand (only in html)
+    theme: yeti # changes color theme I think
+execute: 
+  message: false
+  warning: false
+---
+
+```{r libraries}
+
+library(tidyverse)
+library(here)
+library(janitor)
+library(ggeffects)
+library(performance)
+library(naniar)
+library(flextable)
+library(car)
+library(broom)
+library(corrplot)
+library(AICcmodavg)
+library(GGally)
+
+```
+
+Read in the data:
+
+```{r reading-data}
+
+plant <- read_csv(here("data", "knb-lter-hfr.109.18", "hf109-01-sarracenia.csv")) %>% 
+  
+  # make the column names cleaner
+  clean_names() %>% 
+  
+  # selecting the columns of interest (only retain these columns)
+  select(totmass, species, feedlevel, sla, chlorophyll, amass, num_lvs, num_phylls)
+
+```
+
+Visualize the missing data:
+
+```{r missing-data-visualization}
+
+gg_miss_var(plant)
+
+```
+
+Subsetting the data by dropping NAs:
+
+```{r subset-drop-NA}
+
+plant_subset <- plant %>% 
+  
+  # drops rows with NA values in the columns you specify
+  # it's ok to remove NA's here because we don't know where NA's come from
+  drop_na(sla, chlorophyll, amass, num_lvs, num_phylls) 
+
+```
+
+Create a correlation plot:
+
+Example writing: To determine the relationships between numerical variables in our dataset, we calculated Pearsons r and visually represented correlation using a correlation plot.
+
+```{r correlation-plot}
+
+# calculate Pearson's R for numerical values only
+plant_cor <- plant_subset %>% 
+  
+  # not including totmass because it's the y variable
+  select(feedlevel:num_phylls) %>% 
+  
+  # make correlation matrix (plots variables against each other)
+  # perfect correlation = 1
+  cor(method = "pearson")
+
+# creating a correlation plot (visualizes the correlation matrix we made with cor() function)
+corrplot(plant_cor,
+         # change shape of what's in the cells (ellipse pointing to right = positive relationship)
+         method = "ellipse",
+         addCoef.col = "black")
+
+```
+
+Create a plot of each variable compared against the others
+
+```{r pairs-plot}
+
+plant_subset %>% 
+  
+  # can include the species column now because pairs plots can include categorical variables too
+  select(species:num_phylls) %>% 
+  ggpairs()
+```
+
+Starting regression here:
+
+(example) To determine how species and physiological characteristics predict biomass, we fit multiple linear models
+
+```{r null-and-full-models}
+
+# create a null model
+# totmass ~ 1 means there is no predictor
+null <- lm(totmass ~ 1, data = plant_subset)
+
+# full model has all variables in it
+full <- lm(totmass ~ species + feedlevel + sla + chlorophyll + amass + num_lvs + num_phylls, 
+           data = plant_subset)
+
+```
+
+We visually assessed normality and homoscedasticity of residuals using diagnostic plots for the full model:
+
+```{r full-diagnostics}
+
+# set up a 2x2 grid to display diagnostic plots
+par(mfrow = c(2,2))
+plot(full)
+
+# residuals look pretty normal because they are mostly along the QQ plot line
+# looks heteroskedastic because even though line is pretty flat, residuals have a cone shape
+
+```
+
+We also tested for normality using the Shapiro-Wilk test (null hypothesis: variable of interest (i.e. the residuals) are normally distributed).
+
+We tested for heteroskedasticity using the Breusch-Pagan test (null hypothesis: variable of interest has constant variance).
+
+```{r}
+
+check_normality(full)
+# results: Non-normality of residuals detected (p < .001)
+# this is very common for large datasets
+
+check_heteroscedasticity(full)
+# results: Heteroscedasticity (non-constant error variance) detected (p < .001).
+
+# results: assumptions for multiple linear regression are not met
+
+```
+
+```{r}
+
+# transform variables
+# log function in R is natural log ln
+full_log <- lm(log(totmass) ~ species + feedlevel + sla + chlorophyll + amass + num_lvs + num_phylls, data = plant_subset)
+
+plot(full_log)
+check_normality(full_log)
+check_heteroscedasticity(full_log)
+
+# results: residuals looks normal and homoscedastic now!
+```
+
+
+
+
+
+
+
