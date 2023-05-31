@@ -143,7 +143,10 @@ check_heteroscedasticity(full)
 
 ```
 
-```{r}
+```{r model-logs}
+
+# make null model with no predictors (only response and intercept)
+null_log <- lm(log(totmass) ~ 1, data = plant_subset)
 
 # transform variables
 # log function in R is natural log ln
@@ -156,9 +159,89 @@ check_heteroscedasticity(full_log)
 # results: residuals looks normal and homoscedastic now!
 ```
 
+Evaluate multicollinearity:
 
+```{r calculate-vif}
 
+# calculate vif
+# gvif means general vif and it is calculated if you have categorical variables
+# third row is transformed gvif
+# nothing above 5 in third row so model does display any aspects of multicollinearity?
+car::vif(full_log)
 
+```
 
+We evaluated multicollinearity by calculating the generalized variance inflation factor and determined that the model does not display any aspects of multicollinearity.
 
+Try some more models:
 
+Addressing the question: what set of predictor variables best explains the response?
+
+```{r}
+model2_log <- lm(log(totmass) ~ species, data = plant_subset)
+```
+
+Check assumptions for model 2:
+
+```{r}
+plot(model2_log) # looks pretty good
+
+check_normality(model2_log) # looks good
+check_heteroscedasticity(model2_log) # looks good
+```
+compare models using Akaike's Information criterion (AIC) values:
+
+```{r}
+AICc(full_log) # this model is the least complex that best predicts your response because it has the lowest AIC value
+AICc(model2_log)
+AICc(null_log)
+
+# another way to check AIC but don't need to use this
+MuMIn::AICc(full_log, model2_log, null_log)
+MuMIn::model.sel(full_log, model2_log, null_log)
+```
+We compared models using AIC and chose the model with the lowest value, which was...
+
+# Results:
+
+We found that the __ model including __ ___ ___ predictors best predicted _____ (model summary - df, f stat, alpha, R2, etc)
+
+```{r}
+summary(full_log)
+
+table <- tidy(full_log, conf.int = TRUE) %>% 
+  # change p-value numbers if they're really small using mutate
+  # change the estimates, standard error, t-stats to round to __ digits
+  
+  # make it into flex table
+  flextable() %>% 
+  
+  # fit it to the viewer
+  autofit()
+  
+table
+```
+
+use 'ggpredict()' to backtransform estimates
+
+```{r}
+# How to interpret: all else held constant...alabamensis 2.75 biomass...
+model_pred <- ggpredict(full_log, terms = "species", back.transform = TRUE)
+
+# all dark lines are backtransformed
+# plots predictions with each species
+# bars are 95% confidence interval
+# jittered points = original data
+plot(model_pred, add.data = TRUE)
+
+plot(ggpredict(full_log, terms = "chlorophyll", back.transform = TRUE), add.data = TRUE)
+
+plot(ggpredict(full_log, terms = "feedlevel", back.transform = TRUE), add.data = TRUE)
+
+model_pred
+```
+
+# different types of anovas (NOT NEEDED FOR HW)
+type 1: order you put in variables in model matters in terms of how well they explain the variation in the response
+type 2: order doesn't matter but interactions matter?
+type 3: order and interactions both matter
