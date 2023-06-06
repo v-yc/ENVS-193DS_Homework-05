@@ -5,7 +5,7 @@ format:
     toc: true # add table of contents
     toc-location: left # put toc on the left
     code-fold: true # all code is folded, can be clicked on to expand (only in html)
-    theme: yeti # changes color theme I think
+    theme: yeti # changes color theme
 execute: 
   message: false
   warning: false

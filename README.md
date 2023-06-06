@@ -1,7 +1,5 @@
-# Link to github page:
+## Link to github page:
 https://v-yc.github.io/ENVS-193DS_Homework-05/
-
-# Information on the Data Set
 
 ## General Information:
 
