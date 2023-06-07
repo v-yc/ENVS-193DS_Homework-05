@@ -1,0 +1,352 @@
+---
+title: "Multiple Linear Regression of Sarracenia Plant Characteristics as Predictors of Biomass"
+author: "Victoria Yang"
+date: "June 6, 2023"
+format: 
+  html:
+    toc: true # add table of contents
+    toc-location: left # put toc on the left
+    code-fold: true # all code is folded, can be clicked on to expand (only in html)
+    theme: yeti # changes color theme
+execute: 
+  message: false
+  warning: false
+---
+
+
+Link to github Repo:
+
+https://github.com/v-yc/ENVS-193DS_Homework-05
+
+# Introduction
+
+Sarracenia are carnivorous pitcher plants that obtain energy through an insect-based diet (Srivastava et al, 2011). Sarracenia are important because several members of the taxa are endangered and they are useful for conducting evolutionary and ecological studies (Srivastava et al, 2011). For example, Sarracenia have been found to be involved with top-down and bottom-up ecological processes in inquiline communities (Kneitel 2003).
+
+Morphological characteristics have been found to play a role in prey capture and growth of Sarracenia plants (Cresswell 1993). I think it would be useful to predict individual biomass from morphological, physiological, and taxonomic characteristics to understand what limits the growth of Sarracenia plants and how different characteristics relate to one another. Information on limiting factors would be especially important for efforts in preserving endangered species within the Sarracenia genus.
+
+The question that this study addresses is how do Sarracenia characteristics predict biomass? The hypothesis that I am testing is that species, feedlevel, and specific leaf area (sla) are predictors of biomass.
+
+# Methods
+
+Two plants per species were treated with variable feeding levels from 0-0.25g wasps for small species, 0-0.5g wasps for intermediate species, and 0-1.0g wasps for large species (Ellison and Farnsworth). A total of 120 plants were surveyed and plants were fed once a week for 7 weeks (Ellison and Farnsworth).
+
+For the purposes of my analysis, I only kept the variables I was interested in testing in the data set rather than using all of the 32 variables in the orginal data set. The variables I kept were total biomass, species, feed level, specific leaf area (sla), chlorophyll content, photosynthetic rate (amass), the number of pitchers and phyllodes produced, and the number of phyllodes produced. I created a visualization of the missing observations in the data set and found that five of the variables (chlorophyll, amass, sla, num_phylls, and num_lvls) have missing values. Three of the variables (totmass, species, and feedlevel) do not have any missing values. I removed the missing values from the data set because I do not know why these values are missing and if they are due to human error.
+
+I created a visualization of Pearson's correlation to investigate the strength of the relationships between different numerical predictor variables. I found that amass and sla had the highest correlation, with a Pearson's R of 0.32. Since 0.32 is still far from 1, which represents perfect positive correlation, it does not seem like there are any pairs of variables in the data set that is concerning in terms of falsely skewing the data. In addition to the Pearson's correlation plot, I used a pairs plot to investigate the relationships between variables. The scatterplots and histograms do not show distinct patterns and the Pearson's R values do not show any strong correlations. These results support the previous conclusion that there are no pairs of variables in the data set that is concerning in terms of falsely skewing the data.
+
+After these checks, I created a null model and a full model. The null model has no predictors of biomass. The full model includes species, feed level, specific leaf area (sla), chlorophyll content, photosynthetic rate (amass), the number of pitchers and phyllodes produced, and the number of phyllodes produced as predictors of biomass.
+
+The assumptions of multiple linear regressions were tested for the full model visually with diagnostic tests and statistically with a Shapiro-Wilk test for normality and a Breusch-Pagan test for homoskedasticity. The residuals appeared to be somewhat normal but heteroskedastic with the diagnostic test and the residuals appeared non-normal and heteroscedastic with the statistical tests (p \< .001). Consequently, the assumptions of multiple linear regressions are not met. It is normal for these assumptions to not be met with a large data set so I performed a log-transformation of the data set to create a model that better fits the assumptions of a multiple linear regression. After the log-transformation, the assumptions were met.
+
+I created 3 additional models to determine which model best predicts the biomass of the pitcher plants. The second model includes species and sla as predictors of biomass. I chose these two variables because I think it is common for different species to have different biomass and I think a higher sla value might be a good predictor for greater biomass. The third model looks at species and feed level as predictors of biomass. I wanted to try testing feel level as a predictor because I thought a greater feed level would be a good predictor of greater biomass. The fourth model looks at species, feed level, and sla all together as predictors of biomass because I want to test how these variables might work together to predict biomass.
+
+After creating the models, I conducted a variance inflation factor (vif) check to evaluate multicollinearity in all the models. I determined that none of the models display aspects of multicollinearity because none of the adjusted gvif values (third column) were above 5. Akaike's Information criterion (AIC) value was calculated to compare the 4 models (full model and models 2-4). The full model has the lowest AIC value so it is the best model for predicting biomass compared to the other models.
+
+### Data Analysis
+
+1.  Load in packages:
+
+
+```{r libraries}
+
+# load in packages
+library(tidyverse)
+library(here)
+library(janitor)
+library(ggeffects)
+library(performance)
+library(naniar)
+library(flextable)
+library(car)
+library(broom)
+library(corrplot)
+library(AICcmodavg)
+library(GGally)
+
+```
+
+
+2.  Read in the data and clean the data:
+
+
+```{r reading-data}
+
+# read in data set
+plant <- read_csv(here("data", "knb-lter-hfr.109.18", "hf109-01-sarracenia.csv")) %>% 
+  
+  # make the column names cleaner
+  clean_names() %>% 
+  
+  # select the columns of interest (only retain these columns)
+  select(totmass, species, feedlevel, sla, chlorophyll, amass, num_lvs, num_phylls)
+
+```
+
+
+3.  Visualize the missing data:
+
+
+```{r missing-data-visualization}
+
+gg_miss_var(plant)
+
+```
+
+
+**Figure 1. Number of missing values for the variables of interest.**
+
+4.  Subsetting the data by dropping NAs:
+
+    Since I took this data set from online, I do not know why there are NA values so for the purpose of this analysis, I will exclude them.
+
+
+```{r subset-drop-NA}
+
+plant_subset <- plant %>% 
+  
+  # drops rows with NA values in the columns you specify
+  drop_na(sla, chlorophyll, amass, num_lvs, num_phylls) 
+
+```
+
+
+5.  Create a correlation plot:
+
+To investigate the strength of the relationships between different numerical predictor variables in our data set, we calculated Pearsons R values and displayed the results with a correlation plot.
+
+
+```{r correlation-plot}
+
+# calculate Pearson's R for numerical values only
+plant_cor <- plant_subset %>% 
+  
+  # not including totmass because it's the y variable
+  select(feedlevel:num_phylls) %>% 
+  
+  # make correlation matrix (plots variables against each other)
+  cor(method = "pearson")
+
+# creating a correlation plot (visualizes the correlation matrix we made with cor() function)
+corrplot(plant_cor,
+         # change shape of what's in the cells (ellipse pointing to right = positive relationship)
+         method = "ellipse",
+         addCoef.col = "black")
+
+```
+
+
+**Figure 2. Correlation plot showing Pearson's R values for all the combinations of pairs of numerical predictor variables.** A value of 1 means perfect positive correlation, a value of -1 means perfect negative correlation, and a value of 0 means no correlation. Positive correlations are represented by the color blue and the direction of the ellipse pointing to the upper right; negative correlations are represented by the color red and the direction of the ellipse pointing to the upper left.
+
+6.  Create a pairs plot to visualize the relationships between variables:
+
+
+```{r pairs-plot}
+
+plant_subset %>% 
+  
+  # can include the species column now because pairs plots can include categorical variables too
+  select(species:num_phylls) %>% 
+  ggpairs()
+```
+
+
+**Figure 3. Pairs plots with histograms (left column), box plots (top row), correlation coefficients (upper right area), and scatter plots (lower left area).** Each box in the pairs plot compares the two variables that intersect the box. The line graphs along the diagonal axis compare one variable against itself (eg. species against species).
+
+7.  Create null and full linear models:
+
+To determine how species and physiological characteristics predict biomass, we fit multiple linear regression models.
+
+
+```{r null-and-full-models}
+
+# create a null model
+# totmass ~ 1 means there is no predictor
+null <- lm(totmass ~ 1, data = plant_subset)
+
+# full model has all the variables in it
+full <- lm(totmass ~ species + feedlevel + sla + chlorophyll + amass + num_lvs + num_phylls, 
+           data = plant_subset)
+
+```
+
+
+8.  Perform visual and statistical assumption tests to assess normality and homoscedasticity of residuals for the full model:
+
+Diagnostic plots were used to visually assess assumptions. In addition, the Shapiro-Wilk test (null hypothesis: residuals are normally distributed) was used to assess normality and the Breusch-Pagan test (null hypothesis: residuals have constant variance) was used to assess homoskedasticity.
+
+
+```{r full-diagnostics}
+
+# set up a 2x2 grid to display diagnostic plots
+par(mfrow = c(2,2))
+plot(full)
+
+# residuals look pretty normal because they are mostly along the QQ plot line
+# looks heteroskedastic because even though line is pretty flat, residuals have a cone shape
+
+```
+
+```{r}
+check_normality(full)
+check_heteroscedasticity(full)
+```
+
+
+9.  The residuals appear non-normal and heteroskedastic from the assumption tests so I will log-transform the variables and check if the transformed model fits the assumptions of a multiple linear regression.
+
+
+```{r model-logs}
+
+# make null model for the log transformation
+null_log <- lm(log(totmass) ~ 1, data = plant_subset)
+
+# make a log-transformed full model with all the predictors
+full_log <- lm(log(totmass) ~ species + feedlevel + sla + chlorophyll + amass + num_lvs + num_phylls, data = plant_subset)
+
+# check assumptions again
+plot(full_log)
+check_normality(full_log)
+check_heteroscedasticity(full_log)
+```
+
+
+10. Fit 3 additional models and check the assumptions to do a model comparison analysis:
+
+-   Model 2: species and specific leaf area (sla) as predictors of biomass
+
+
+```{r}
+model2_log <- lm(log(totmass) ~ species + sla, data = plant_subset)
+
+plot(model2_log) # looks pretty good
+
+check_normality(model2_log) # looks good
+check_heteroscedasticity(model2_log) # looks good
+```
+
+
+-   Model 3: species and feedlevel as predictors of biomass
+
+
+```{r}
+model3_log <- lm(log(totmass) ~ species + feedlevel, data = plant_subset)
+
+plot(model3_log) # looks pretty good
+
+check_normality(model3_log) # looks good
+check_heteroscedasticity(model3_log) # looks good
+```
+
+
+-   Model 4: species, feedlevel, and specific leaf area (sla) as predictors of biomass
+
+
+```{r}
+model4_log <- lm(log(totmass) ~ species + feedlevel + sla, data = plant_subset)
+
+plot(model4_log) # looks pretty good
+
+check_normality(model4_log) # looks good
+check_heteroscedasticity(model4_log) # looks good
+```
+
+
+11. Calculate vif values to check for multicollinearity, which can lead to skewed results:
+
+
+```{r calculate-vif}
+
+# gvif means general vif and it is calculated if you have categorical variables
+# third row is transformed gvif
+car::vif(full_log)
+car::vif(model2_log)
+car::vif(model3_log)
+car::vif(model4_log)
+
+```
+
+
+12. Compare models by calculating Akaike's Information criterion (AIC) values:
+
+
+```{r}
+
+# calculate AIC values for each model
+AICc(full_log)
+AICc(model2_log)
+AICc(model3_log)
+AICc(model4_log)
+AICc(null_log)
+```
+
+
+# Results
+
+I found that the full model including all the predictors (species, feed level, sla, chlorophyll content, amass, the number of pitchers and phyllodes, and the number of phyllodes) best predicted total biomass (F15,87 = 38.38, p \\\< 0.001, R2 = 0.85). I chose this as the best-fit model because it has the lowest AIC value, which means that it is the least complex model that best predicts the data.
+
+-   Interpretation of your chosen model (1-3 sentences)
+
+-   Visualization of model predictions for biomass as a function of the predictor\
+    variable of your choice with an accompanying caption (caption: 1-3 sentences)
+
+-   Discussion of results: what does this model mean biologically? (1-3 sentences)
+
+Summary of the model:
+
+
+```{r}
+summary(full_log)
+
+table <- tidy(full_log, conf.int = TRUE) %>% 
+  
+  # change the estimates, standard error, t-stats to round to 2 digits
+  mutate(across(estimate:conf.high, ~ round(.x, digits = 2))) %>% 
+  
+  # replace the small p values with < 0.001
+  mutate(p.value = case_when(p.value < 0.001 ~ "< 0.001")) %>% 
+  
+  # make it into flex table
+  flextable() %>% 
+  
+  # change header labels
+  set_header_labels(std.error = "standard error", 
+                    statistic = "F-statistic",
+                    p.value = "p-value",
+                    conf.low = "low confidence interval",
+                    conf.high = "high confidence interval")
+  
+  # fit it to the viewer
+  autofit(table)
+```
+
+
+Backtransform estimates to undo the log-transformation I did on the model:
+
+
+```{r}
+# How to interpret: all else held constant...alabamensis 2.75 biomass...
+# all dark lines are backtransformed
+# plots predictions with each species
+# bars are 95% confidence interval
+# jittered points = original data
+
+plot(ggpredict(full_log, terms = "species", back.transform = TRUE), add.data = TRUE)
+plot(ggpredict(full_log, terms = "feedlevel", back.transform = TRUE), add.data = TRUE)
+plot(ggpredict(full_log, terms = "sla", back.transform = TRUE), add.data = TRUE)
+plot(ggpredict(full_log, terms = "chlorophyll", back.transform = TRUE), add.data = TRUE)
+plot(ggpredict(full_log, terms = "amass", back.transform = TRUE), add.data = TRUE)
+plot(ggpredict(full_log, terms = "num_lvs", back.transform = TRUE), add.data = TRUE)
+plot(ggpredict(full_log, terms = "num_phylls", back.transform = TRUE), add.data = TRUE)
+```
+
+
+The dark lines represent the backtransformed model, the gray area represents a 95% confidence interval, and the jittered points represent the individual data points.
+
+# Bibliography
+
+Author(s). "Title of Article." *Title of Journal*, Volume, Issue, Year, pages.
+
+1.  Cresswell, James E. "The Morphological Correlates of Prey Capture and Resource Parasitism in Pitchers of the Carnivorous Plant Sarracenia purpurea." *The American Midland Naturalist*, vol. 129, no. 1, 1993, pp. 35-41, <https://doi.org/10.2307/2426433>.
+2.  Kneitel, Jamie M., and Thomas E. Miller. "Resource and top-predator regulation in the pitcher plant (Sarracenia purpurea) inquiline community." *Ecological Society of America*, vol. 83, no. 3, 2002, pp. 680-688.
+3.  Srivastava, Anuj, Willie L. Rogers, Catherine M. Breton, Liming Cai, and Russell L. Malmberg. "Transcriptome Analysis of Sarracenia, an Insectivorous Plant." *DNA Research*, vol. 18, no. 4, 2011, pp. 253--261, <https://doi.org/10.1093/dnares/dsr014>.
+
