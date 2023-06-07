@@ -255,13 +255,6 @@ AICc(null_log)
 
 I found that the full model including all the predictors (species, feed level, sla, chlorophyll content, amass, the number of pitchers and phyllodes, and the number of phyllodes) best predicted total biomass (F15,87 = 38.38, p \\\< 0.001, R2 = 0.85). I chose this as the best-fit model because it has the lowest AIC value, which means that it is the least complex model that best predicts the data.
 
--   Interpretation of your chosen model (1-3 sentences)
-
--   Visualization of model predictions for biomass as a function of the predictor\
-    variable of your choice with an accompanying caption (caption: 1-3 sentences)
-
--   Discussion of results: what does this model mean biologically? (1-3 sentences)
-
 Summary of the model:
 
 ```{r}
