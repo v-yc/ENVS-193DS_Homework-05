@@ -1,5 +1,7 @@
 ---
-title: "Untitled"
+title: "Multiple Linear Regression of Sarracenia Plant Characteristics as Predictors of Biomass"
+author: "Victoria Yang"
+date: "June 6, 2023"
 format: 
   html:
     toc: true # add table of contents
@@ -13,12 +15,11 @@ execute:
 
 # Introduction
 
--   What are Sarracenia?
--   Why might people care about them?
--   Why do you think it could be useful and/or important to predict individual biomass from morphological, physiological, or taxonomic characteristics?
--   What questions are you addressing?
--   What hypotheses are you testing?
--   Include 3-5 in-text citations of peer-reviewed work.
+Sarracenia are carnivorous pitcher plants that obtain energy through an insect-based diet (Srivastava et al, 2011). Sarracenia are important because several members of the taxa are endangered and they are useful for conducting evolutionary and ecological studies (Srivastava et al, 2011). For example, Sarracenia have been found to be involved with top-down and bottom-up ecological processes in inquiline communities (Kneitel 2003).
+
+Morphological characteristics have been found to play a role in prey capture and growth of Sarracenia plants (Cresswell 1993). I think it would be useful to predict individual biomass from morphological, physiological, and taxonomic characteristics to understand what limits the growth of Sarracenia plants and how different characteristics relate to one another. Information on limiting factors would be especially important for efforts in preserving endangered species within the Sarracenia genus.
+
+The question that this study addresses is how do Sarracenia characteristics predict biomass? The hypothesis that I am testing is that species, feedlevel, and specific leaf area (sla) are predictors of biomass.
 
 # Methods
 
@@ -300,10 +301,14 @@ plot(ggpredict(full_log, terms = "chlorophyll", back.transform = TRUE), add.data
 plot(ggpredict(full_log, terms = "amass", back.transform = TRUE), add.data = TRUE)
 plot(ggpredict(full_log, terms = "num_lvs", back.transform = TRUE), add.data = TRUE)
 plot(ggpredict(full_log, terms = "num_phylls", back.transform = TRUE), add.data = TRUE)
-
-model_pred
 ```
 
 The dark lines represent the backtransformed model, the gray area represents a 95% confidence interval, and the jittered points represent the individual data points.
 
 # Bibliography
+
+Author(s). "Title of Article." *Title of Journal*, Volume, Issue, Year, pages.
+
+1.  Cresswell, James E. "The Morphological Correlates of Prey Capture and Resource Parasitism in Pitchers of the Carnivorous Plant Sarracenia purpurea." *The American Midland Naturalist*, vol. 129, no. 1, 1993, pp. 35-41, <https://doi.org/10.2307/2426433>.
+2.  Kneitel, Jamie M., and Thomas E. Miller. "Resource and top-predator regulation in the pitcher plant (Sarracenia purpurea) inquiline community." *Ecological Society of America*, vol. 83, no. 3, 2002, pp. 680-688.
+3.  Srivastava, Anuj, Willie L. Rogers, Catherine M. Breton, Liming Cai, and Russell L. Malmberg. "Transcriptome Analysis of Sarracenia, an Insectivorous Plant." *DNA Research*, vol. 18, no. 4, 2011, pp. 253--261, <https://doi.org/10.1093/dnares/dsr014>.
